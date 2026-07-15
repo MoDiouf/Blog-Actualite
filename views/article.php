@@ -1,29 +1,5 @@
 <?php
-require_once __DIR__ . '/config/database.php';
-
-if (!isset($_GET['id']) || empty($_GET['id'])) {
-    die("Article introuvable.");
-}
-
-$id = (int) $_GET['id'];
-
-$sql = $pdo->prepare("
-    SELECT
-        Article.*,
-        Categorie.libelle
-    FROM Article
-    JOIN Categorie
-        ON Article.categorie = Categorie.id
-    WHERE Article.id = ?
-");
-
-$sql->execute([$id]);
-
-$article = $sql->fetch(PDO::FETCH_ASSOC);
-
-if (!$article) {
-    die("Article introuvable.");
-}
+// Les données sont préparées par ArticleController
 ?>
 
 <!DOCTYPE html>

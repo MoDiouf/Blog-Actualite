@@ -1,73 +1,60 @@
 <?php
+
 require_once __DIR__ . '/config/database.php';
+require_once __DIR__ . '/models/Article.php';
+require_once __DIR__ . '/models/Categorie.php';
+require_once __DIR__ . '/controllers/ArticleController.php';
+require_once __DIR__ . '/controllers/AdminController.php';
 
+$action = isset($_GET['action']) ? $_GET['action'] : 'index';
+$id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$categorie = isset($_GET['categorie']) ? (int)$_GET['categorie'] : 0;
 
-$sqlCategorie = $pdo->query("SELECT * FROM Categorie ORDER BY libelle");
-$categories = $sqlCategorie->fetchAll(PDO::FETCH_ASSOC);
+$articleController = new ArticleController($pdo);
+$adminController = new AdminController($pdo);
 
-$categorie = isset($_GET["categorie"]) ? intval($_GET["categorie"]) : 0;
+switch ($action) {
+    // Pages publiques
+    case 'index':
+        $articleController->index($categorie);
+        break;
 
+    case 'article':
+        if ($id) {
+            $articleController->show($id);
+        } else {
+            die("Article introuvable.");
+        }
+        break;
 
-if ($categorie == 0) {
-    $sql = $pdo->prepare("
-        SELECT Article.*, Categorie.libelle
-        FROM Article
-        JOIN Categorie
-            ON Article.categorie = Categorie.id
-        ORDER BY dateCreation DESC
-    ");
+    // Pages admin
+    case 'admin':
+        $adminController->index();
+        break;
 
-    $sql->execute();
-} else {
-    $sql = $pdo->prepare("
-        SELECT Article.*, Categorie.libelle
-        FROM Article
-        JOIN Categorie
-            ON Article.categorie = Categorie.id
-        WHERE categorie = ?
-        ORDER BY dateCreation DESC
-    ");
+    case 'admin_form':
+        $adminController->form($id);
+        break;
 
-    $sql->execute([$categorie]);
+    case 'admin_save':
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $adminController->save();
+        } else {
+            header('Location: index.php?action=admin');
+            exit;
+        }
+        break;
+
+    case 'admin_delete':
+        if ($id) {
+            $adminController->delete($id);
+        } else {
+            header('Location: index.php?action=admin');
+            exit;
+        }
+        break;
+
+    default:
+        $articleController->index($categorie);
+        break;
 }
-
-$articles = $sql->fetchAll(PDO::FETCH_ASSOC);
-?>
-
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <title>MGLSI NEWS</title>
-    <link rel="stylesheet" href="css/style.css">
-</head>
-<body>
-    <?php include 'includes/headers.php'; ?>
-
-    <main>
-        <?php if (count($articles) === 0): ?>
-            <h2>Aucun article trouvé.</h2>
-        <?php else: ?>
-            <?php foreach ($articles as $article): ?>
-                <article class="article">
-                    <h2>
-                        <a href="article.php?id=<?= $article['id'] ?>">
-                            <?= htmlspecialchars($article['titre']) ?>
-                        </a>
-                    </h2>
-                    
-                    <p><strong>Catégorie :</strong> <?= htmlspecialchars($article['libelle']) ?></p>
-                    <p><strong>Date :</strong> <?= htmlspecialchars($article['dateCreation']) ?></p>
-                    
-                    <p><?= htmlspecialchars(substr($article['contenu'], 0, 200)) ?>...</p>
-                    
-                    <p>
-                        <a href="article.php?id=<?= $article['id'] ?>">Lire la suite</a>
-                    </p>
-                    <hr>
-                </article>
-            <?php endforeach; ?>
-        <?php endif; ?>
-    </main>
-</body>
-</html>
